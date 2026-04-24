@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"boot.dev/linko/internal/store"
+	"boot.dev/linko/middleware"
 )
 
 type server struct {
@@ -21,8 +22,7 @@ func newServer(store store.Store, port int, cancel context.CancelFunc) *server {
 	mux := http.NewServeMux()
 
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
+		Addr: fmt.Sprintf(":%d", port),
 	}
 
 	s := &server{
@@ -38,6 +38,8 @@ func newServer(store store.Store, port int, cancel context.CancelFunc) *server {
 	mux.Handle("GET /api/urls", s.authMiddleware(http.HandlerFunc(s.handlerListURLs)))
 	mux.HandleFunc("GET /{shortCode}", s.handlerRedirect)
 	mux.HandleFunc("POST /admin/shutdown", s.handlerShutdown)
+
+	srv.Handler = middleware.RequestLogger(logger)(mux)
 
 	return s
 }
